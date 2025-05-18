@@ -1,88 +1,109 @@
 # fundamentos_programacion
 
-# Análisis y Visualización de Series Temporales Económicas y Financieras
+# Análisis de Series Temporales Económicas y Financieras: Caso Bancolombia ADR y Macroeconomía Colombiana
 
-Este proyecto realiza la descarga, limpieza, análisis y visualización de datos financieros y macroeconómicos, enfocado en la serie histórica del ADR de Bancolombia (CIB) y varias variables macroeconómicas clave de Colombia.
-
----
-
-## Descripción general
-
-El flujo general del análisis consiste en:
-
-1. **Descarga de datos financieros**
-   - Se obtiene el histórico de precios del ADR Bancolombia (`CIB`) con `yfinance`, tomando la columna de apertura diaria.
-
-2. **Lectura de datos macroeconómicos**
-   - Se cargan series económicas desde un archivo Excel, con fechas convertidas correctamente a formato datetime.
-
-3. **Preparación y combinación de datos**
-   - Se ajustan columnas y se unifican los DataFrames por fecha para combinar precios y variables macroeconómicas.
-   - Se limpian las variables numéricas para manejar valores faltantes y formatos no numéricos.
-
-4. **Análisis exploratorio y descriptivo**
-   - Se generan estadísticas básicas, gráficos de series, histogramas y medias móviles para cada variable.
-   - Se realizan pruebas de estacionariedad (ADF y KPSS).
-   - Se lleva a cabo una descomposición estacional y análisis de autocorrelación (ACF y PACF).
-
-5. **Preparación de pares para análisis conjunto**
-   - Se crean DataFrames con pares de series (precio diario vs variable macro) alineadas temporalmente para facilitar el análisis bivariado.
-
-6. **Análisis de correlaciones**
-   - Se calcula la correlación de Pearson entre pares de variables.
-   - Se clasifican las relaciones como procíclicas, contracíclicas o acíclicas según el signo y magnitud de la correlación.
-   - Se generan gráficos comparativos con ambas series superpuestas en ejes dobles.
+Este proyecto consiste en un análisis exploratorio y correlacional entre la serie histórica del precio de apertura del ADR de Bancolombia (CIB) y varias variables macroeconómicas de Colombia. El análisis incluye la descarga, limpieza, preparación, visualización y pruebas estadísticas para comprender las relaciones y comportamiento de estas series en el tiempo.
 
 ---
 
-## Estructura del proyecto
+## Contenido del proyecto
 
-- **Descarga y preprocesamiento**  
-  Código para obtener y preparar datos (yfinance, pandas).
+El código realiza las siguientes etapas principales:
 
-- **Limpieza y unificación**  
-  Tratamiento de valores faltantes, conversión de tipos y combinación de fuentes.
+### 1. Descarga y Preparación Inicial de Datos
 
-- **Análisis univariado**  
-  Estadísticas descriptivas, pruebas de estacionariedad y descomposición.
+- **Datos financieros (ADR Bancolombia):**  
+  Se utiliza la librería `yfinance` para descargar datos históricos del ADR Bancolombia (ticker `CIB`) desde mayo 2015 hasta mayo 2025.  
+  Se selecciona únicamente la columna `Open` (precio de apertura diario) y se convierte el índice de fechas en una columna normal para facilitar la manipulación posterior.
 
-- **Análisis bivariado**  
-  Construcción de pares y análisis de correlación con visualización.
+- **Datos macroeconómicos:**  
+  Se leen variables macroeconómicas almacenadas en un archivo Excel (`graficador_series.xlsx`) que contiene diferentes series temporales en formato textual.  
+  Se convierte la columna de fecha en tipo datetime, asegurando que el formato día/mes/año sea interpretado correctamente. También se renombra esta columna a `Date` para estandarizar.
+
+### 2. Unificación y Limpieza de Datos
+
+- **Normalización de columnas y combinación:**  
+  Se ajustan los nombres de columnas del DataFrame financiero para eliminar niveles (en caso de multiíndices) y luego se realiza una unión (`merge`) con el DataFrame macroeconómico usando la columna `Date` como clave.  
+  Esto genera un DataFrame combinado que contiene el precio de apertura diario y las variables macroeconómicas para cada fecha.
+
+- **Limpieza de valores faltantes:**  
+  En ciertas columnas macroeconómicas, los valores faltantes o inconsistentes estaban marcados con guiones (`"-"`). Estos se reemplazan por `NaN` para que Pandas los reconozca como valores faltantes y facilite el análisis estadístico.
+
+### 3. Análisis Univariado de Series Temporales
+
+Para cada variable macroeconómica de interés, se realiza:
+
+- **Conversión numérica robusta:**  
+  Se normalizan formatos numéricos (puntos decimales, porcentajes, etc.) para convertir las series a tipos numéricos.
+
+- **Estadísticas descriptivas:**  
+  Se imprimen medidas básicas como media, desviación estándar, cuartiles, etc., para tener una primera impresión de la distribución de cada serie.
+
+- **Visualización:**  
+  - Serie temporal para observar tendencia y posibles patrones.  
+  - Histograma para analizar la distribución de valores.  
+  - Media móvil para suavizar la serie y destacar tendencias de mediano plazo.
+
+- **Análisis de autocorrelación:**  
+  Se realizan gráficos de autocorrelación (ACF) y autocorrelación parcial (PACF) para entender dependencias temporales en la serie.
+
+- **Pruebas de estacionariedad:**  
+  - **ADF (Augmented Dickey-Fuller):** prueba para detectar raíces unitarias y si la serie es estacionaria.  
+  - **KPSS (Kwiatkowski-Phillips-Schmidt-Shin):** otra prueba complementaria para estacionariedad.
+
+- **Descomposición estacional:**  
+  Separación de la serie en componentes de tendencia, estacionalidad y residual para entender mejor su comportamiento.
+
+### 4. Preparación para Análisis Bivariado
+
+- Se alinean las series del precio diario (`Open_CIB`) con cada variable macroeconómica según su frecuencia (mensual o trimestral) usando reindexación con método `forward-fill`. Esto garantiza que cada observación tenga su correspondiente dato macroeconómico.
+
+- Para las variables con frecuencia diaria (por ejemplo, la tasa de política monetaria), se busca la intersección de fechas disponibles y se crea un DataFrame conjunto.
+
+- Se generan DataFrames independientes para cada par (`Open_CIB` vs variable macro), facilitando análisis específicos.
+
+### 5. Análisis de Correlaciones y Visualización Conjunta
+
+- Se calcula la correlación de Pearson para cada par de variables.  
+- Según el valor y signo de la correlación, se clasifica la relación en:  
+  - **Procíclica:** correlación positiva fuerte (mayor que un umbral).  
+  - **Contracíclica:** correlación negativa fuerte (menor que el umbral negativo).  
+  - **Acíclica:** correlación débil o cercana a cero.
+
+- Se crean gráficos con doble eje y para visualizar simultáneamente ambas series, facilitando la interpretación visual de la relación entre ellas.
+
+- Se presenta un resumen con las correlaciones y su clasificación para todas las parejas analizadas.
 
 ---
 
-## Requisitos
+## Estructura del código
 
-- Python 3.7 o superior
-- Librerías:
-  - pandas
-  - numpy
-  - yfinance
-  - matplotlib
-  - statsmodels
-  - scipy
-
----
-
-## Uso
-
-1. Ejecutar el código de descarga y limpieza para obtener el DataFrame principal combinado.
-2. Ejecutar los análisis univariados para cada serie macroeconómica.
-3. Preparar los DataFrames para pares de análisis.
-4. Ejecutar el análisis de correlaciones para identificar relaciones y visualizar los resultados.
+| Sección                         | Descripción                                                                                 |
+|--------------------------------|---------------------------------------------------------------------------------------------|
+| Descarga datos financieros      | Descarga histórico diario del ADR Bancolombia con `yfinance`.                              |
+| Lectura y procesamiento Excel   | Carga y limpieza de variables macroeconómicas desde archivo Excel.                         |
+| Unión y limpieza de datos       | Combina ambos DataFrames en uno solo, normaliza columnas y reemplaza valores faltantes.     |
+| Análisis univariado             | Estadísticas descriptivas, pruebas de estacionariedad, descomposición y gráficos.           |
+| Preparación para análisis bivar | Creación de DataFrames por pares para comparación directa entre precio y variables macro.   |
+| Análisis correlacional          | Cálculo y clasificación de correlaciones, junto con visualización comparativa.              |
 
 ---
 
-## Objetivo
+## Dependencias
 
-El proyecto busca entender cómo se relaciona la evolución diaria del precio del ADR Bancolombia con variables macroeconómicas importantes, proporcionando un análisis cuantitativo y visual para detectar patrones y posibles dependencias económicas.
+Para ejecutar el proyecto necesitas tener instaladas las siguientes librerías:
 
----
+- `pandas`
+- `numpy`
+- `yfinance`
+- `matplotlib`
+- `statsmodels`
+- `scipy`
 
-## Autor
+Puedes instalar todas con:
 
-[Andres Camilo]
+```bash
+pip install pandas numpy yfinance matplotlib statsmodels scipy
 
----
 
 
