@@ -107,3 +107,73 @@ pip install pandas numpy yfinance matplotlib statsmodels scipy
 
 
 
+
+
+# Imputación de Series Económicas
+
+## Objetivo
+
+El objetivo de esta sección es limpiar y rellenar (imputar) valores faltantes en una serie de variables económicas clave para garantizar su continuidad temporal antes de ser usadas en un modelo de predicción.
+
+---
+
+## Pasos realizados
+
+1. **Limpieza de datos:**  
+   - Se reemplazan guiones (–, —, -) por `NaN`.
+   - Se reemplazan comas por puntos para manejar correctamente los valores decimales.
+
+2. **Conversión de datos:**  
+   - Se convierten las columnas relevantes a tipo `float`.
+   - Se asegura que el índice del DataFrame sea de tipo `datetime` y esté ordenado.
+
+3. **Imputación de valores faltantes:**  
+   - **Interpolación temporal** para series mensuales como M1 y tasa de desempleo.
+   - **Forward-fill + backward-fill** para variables trimestrales o más estables como PIB e inflación.
+
+4. **Verificación:**  
+   - Se imprime el número de valores nulos antes y después de imputar.
+   - Se muestran las primeras filas del DataFrame para comprobar visualmente.
+
+---
+
+# Preprocesamiento
+
+## Objetivo
+
+Esta sección transforma los datos imputados en un formato adecuado para entrenar una red neuronal recurrente (RNN), utilizando secuencias de tiempo como entrada y una variable económica como objetivo.
+
+---
+
+## Pasos realizados
+
+1. **Selección de columnas:**  
+   Se definen las variables económicas que actuarán como input y la variable objetivo (`target_col`) a predecir.
+
+2. **Escalado con MinMaxScaler:**  
+   Todas las columnas seleccionadas son escaladas al rango [0, 1] para mejorar el entrenamiento del modelo.
+
+3. **Separación de inputs y target:**  
+   Se dividen los datos escalados en:
+   - `training_set_scaled`: secuencias multivariadas (inputs)
+   - `y_data_scaled`: valores objetivo (target)
+
+4. **Creación de ventanas temporales:**  
+   - Se construyen secuencias de `window_size` pasos (por ejemplo, 60 meses).
+   - Cada secuencia se usará como input para predecir el valor futuro del target.
+
+5. **Conversión a arrays NumPy:**  
+   Las listas de secuencias (`X_train`) y de objetivos (`y_train`) se convierten a arrays para alimentar la RNN.
+
+---
+
+## Salida
+
+- `X_train`: array de forma `(n_muestras, window_size, n_variables)`
+- `y_train`: array de forma `(n_muestras,)`
+
+Estos están listos para ser usados en el modelo de aprendizaje secuencial.
+
+
+
+
