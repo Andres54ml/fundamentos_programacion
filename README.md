@@ -88,7 +88,75 @@ Para cada variable macroeconómica de interés, se realiza:
 | Análisis correlacional          | Cálculo y clasificación de correlaciones, junto con visualización comparativa.              |
 
 ---
+# Proyecto de Predicción de Series Económicas con RNN
 
+Este repositorio contiene el código y la documentación para el preprocesamiento y la imputación de series de tiempo económicas, preparando los datos para su uso en un modelo de Red Neuronal Recurrente (RNN) para tareas de predicción.
+
+## Imputación de Series Económicas
+
+### Objetivo
+
+El objetivo de esta sección es limpiar y rellenar (imputar) valores faltantes en una serie de variables económicas clave para garantizar su continuidad temporal antes de ser usadas en un modelo de predicción.
+
+---
+
+### Pasos realizados
+
+1.  **Limpieza de datos:**
+    * Se reemplazan guiones (–, —, -) por `NaN`.
+    * Se reemplazan comas por puntos para manejar correctamente los valores decimales.
+2.  **Conversión de datos:**
+    * Se convierten las columnas relevantes a tipo `float`.
+    * Se asegura que el índice del DataFrame sea de tipo `datetime` y esté ordenado.
+3.  **Imputación de valores faltantes:**
+    * **Interpolación temporal** (`interpolate(method='time')`): Aplicada a series con periodicidad mensual como M1 y tasa de desempleo.
+    * **Forward-fill + backward-fill** (`fillna(method='ffill').fillna(method='bfill')`): Utilizado para variables trimestrales o más estables como PIB e inflación, asegurando que se llenen también los `NaN`s iniciales.
+4.  **Verificación:**
+    * Se imprime el número de valores nulos antes y después de imputar para confirmar el proceso.
+    * Se muestran las primeras filas del DataFrame para comprobar visualmente la estructura y los datos imputados.
+
+---
+
+## Preprocesamiento para RNN
+
+### Objetivo
+
+Esta sección transforma los datos imputados en un formato adecuado para entrenar una red neuronal recurrente (RNN), utilizando secuencias de tiempo multivariadas como entrada y una variable económica específica como objetivo.
+
+---
+
+### Pasos realizados
+
+1.  **Selección de columnas:**
+    * Se definen las variables económicas que actuarán como características de entrada (`input_cols`).
+    * Se especifica la variable objetivo (`target_col`) a predecir.
+2.  **Escalado con MinMaxScaler:**
+    * Todas las columnas seleccionadas (inputs y target) son escaladas al rango [0, 1] utilizando `sklearn.preprocessing.MinMaxScaler`. Esto es crucial para optimizar el entrenamiento de la red neuronal.
+    * *(Nota: En un flujo de trabajo real, el escalador debe ser ajustado SOLO con los datos de entrenamiento para evitar data leakage).*
+3.  **Separación de inputs y target escalados:**
+    * Se dividen los datos escalados en dos arrays NumPy:
+        * `training_set_scaled`: Contiene las características de entrada escaladas.
+        * `y_data_scaled`: Contiene los valores de la variable objetivo escalada.
+4.  **Creación de ventanas temporales (Windowing):**
+    * Se construyen secuencias deslizantes de tamaño `window_size` (por ejemplo, 60 pasos de tiempo).
+    * Cada secuencia es un array 2D (`window_size` x `n_variables`) que captura el historial reciente de las variables de entrada.
+    * La etiqueta (`y`) para cada secuencia es el valor del target escalado en el paso de tiempo inmediatamente siguiente a la ventana.
+5.  **Conversión a arrays NumPy finales:**
+    * Las listas de secuencias (`X_train`) y de objetivos (`y_train`) se convierten a arrays NumPy para su uso directo en el entrenamiento de la RNN.
+
+---
+
+### Salida
+
+Después de este proceso de preprocesamiento, se obtienen los siguientes arrays listos para ser usados como entrada en un modelo de aprendizaje secuencial (como una capa LSTM o GRU en Keras/TensorFlow o PyTorch):
+
+* `X_train`: Array NumPy con forma `(n_muestras, window_size, n_variables)`, donde:
+    * `n_muestras`: es el número total de secuencias creadas.
+    * `window_size`: es el tamaño de cada ventana temporal.
+    * `n_variables`: es el número de columnas de input seleccionadas.
+* `y_train`: Array NumPy con forma `(n_muestras,)` (si se predice una sola variable), conteniendo los valores objetivo escalados correspondientes a cada secuencia en `X_train`.
+
+  
 ## Dependencias
 
 Para ejecutar el proyecto necesitas tener instaladas las siguientes librerías:
@@ -105,74 +173,6 @@ Puedes instalar todas con:
 ```bash
 pip install pandas numpy yfinance matplotlib statsmodels scipy
 
-
-
-
-
-# Imputación de Series Económicas
-
-## Objetivo
-
-El objetivo de esta sección es limpiar y rellenar (imputar) valores faltantes en una serie de variables económicas clave para garantizar su continuidad temporal antes de ser usadas en un modelo de predicción.
-
----
-
-## Pasos realizados
-
-1. **Limpieza de datos:**  
-   - Se reemplazan guiones (–, —, -) por `NaN`.
-   - Se reemplazan comas por puntos para manejar correctamente los valores decimales.
-
-2. **Conversión de datos:**  
-   - Se convierten las columnas relevantes a tipo `float`.
-   - Se asegura que el índice del DataFrame sea de tipo `datetime` y esté ordenado.
-
-3. **Imputación de valores faltantes:**  
-   - **Interpolación temporal** para series mensuales como M1 y tasa de desempleo.
-   - **Forward-fill + backward-fill** para variables trimestrales o más estables como PIB e inflación.
-
-4. **Verificación:**  
-   - Se imprime el número de valores nulos antes y después de imputar.
-   - Se muestran las primeras filas del DataFrame para comprobar visualmente.
-
----
-
-# Preprocesamiento
-
-## Objetivo
-
-Esta sección transforma los datos imputados en un formato adecuado para entrenar una red neuronal recurrente (RNN), utilizando secuencias de tiempo como entrada y una variable económica como objetivo.
-
----
-
-## Pasos realizados
-
-1. **Selección de columnas:**  
-   Se definen las variables económicas que actuarán como input y la variable objetivo (`target_col`) a predecir.
-
-2. **Escalado con MinMaxScaler:**  
-   Todas las columnas seleccionadas son escaladas al rango [0, 1] para mejorar el entrenamiento del modelo.
-
-3. **Separación de inputs y target:**  
-   Se dividen los datos escalados en:
-   - `training_set_scaled`: secuencias multivariadas (inputs)
-   - `y_data_scaled`: valores objetivo (target)
-
-4. **Creación de ventanas temporales:**  
-   - Se construyen secuencias de `window_size` pasos (por ejemplo, 60 meses).
-   - Cada secuencia se usará como input para predecir el valor futuro del target.
-
-5. **Conversión a arrays NumPy:**  
-   Las listas de secuencias (`X_train`) y de objetivos (`y_train`) se convierten a arrays para alimentar la RNN.
-
----
-
-## Salida
-
-- `X_train`: array de forma `(n_muestras, window_size, n_variables)`
-- `y_train`: array de forma `(n_muestras,)`
-
-Estos están listos para ser usados en el modelo de aprendizaje secuencial.
 
 
 
